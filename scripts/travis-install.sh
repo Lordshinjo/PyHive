@@ -63,6 +63,21 @@ cp -r $(dirname $0)/travis-conf/presto presto-server/etc
 /usr/bin/python2.7 presto-server/bin/launcher.py start
 
 #
+# Trino
+#
+
+mvn -q org.apache.maven.plugins:maven-dependency-plugin:3.0.0:copy \
+    -Dartifact=io.trino:trino-server:${TRINO}:tar.gz \
+    -DoutputDirectory=.
+tar -x -z -f trino-server-*.tar.gz
+rm -rf trino-server
+mv trino-server-*/ trino-server
+
+cp -r $(dirname $0)/travis-conf/trino trino-server/etc
+
+trino-server/bin/launcher start
+
+#
 # Python
 #
 
@@ -70,6 +85,9 @@ pip install $SQLALCHEMY
 pip install -e .
 pip install -r dev_requirements.txt
 
-# Sleep so Presto has time to start up.
+# Sleep so Presto and Trino have time to start up.
 # Otherwise we might get 'No nodes available to run query' or 'Presto server is still initializing'
-while ! grep -q 'SERVER STARTED' /tmp/presto/data/var/log/server.log; do sleep 1; done
+while ! ( \
+  grep -q 'SERVER STARTED' /tmp/presto/data/var/log/server.log && \
+  grep -q 'SERVER STARTED' /tmp/trino/data/var/log/server.log \
+); do sleep 1; done
