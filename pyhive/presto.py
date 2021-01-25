@@ -88,6 +88,7 @@ class Cursor(common.DBAPICursor):
     Cursors are not isolated, i.e., any changes done to the database by a cursor are immediately
     visible by other cursors or connections.
     """
+    header_prefix = 'X-Presto'
 
     def __init__(self, host, port='8080', username=None, principal_username=None, catalog='hive',
                  schema='default', poll_interval=1, source='pyhive', session_props=None,
@@ -240,14 +241,14 @@ class Cursor(common.DBAPICursor):
         Return values are not defined.
         """
         headers = {
-            'X-Presto-Catalog': self._catalog,
-            'X-Presto-Schema': self._schema,
-            'X-Presto-Source': self._source,
-            'X-Presto-User': self._username,
+            '{0}-Catalog'.format(self.header_prefix): self._catalog,
+            '{0}-Schema'.format(self.header_prefix): self._schema,
+            '{0}-Source'.format(self.header_prefix): self._source,
+            '{0}-User'.format(self.header_prefix): self._username,
         }
 
         if self._session_props:
-            headers['X-Presto-Session'] = ','.join(
+            headers['{0}-Session'.format(self.header_prefix)] = ','.join(
                 '{}={}'.format(propname, propval)
                 for propname, propval in self._session_props.items()
             )
@@ -332,11 +333,13 @@ class Cursor(common.DBAPICursor):
         self._columns = response_json.get('columns')
         if 'id' in response_json:
             self.last_query_id = response_json['id']
-        if 'X-Presto-Clear-Session' in response.headers:
-            propname = response.headers['X-Presto-Clear-Session']
+        if '{0}-Clear-Session'.format(self.header_prefix) in response.headers:
+            propname = response.headers['{0}-Clear-Session'.format(self.header_prefix)]
             self._session_props.pop(propname, None)
-        if 'X-Presto-Set-Session' in response.headers:
-            propname, propval = response.headers['X-Presto-Set-Session'].split('=', 1)
+        if '{0}-Set-Session'.format(self.header_prefix) in response.headers:
+            propname, propval = (
+                response.headers['{0}-Set-Session'.format(self.header_prefix)].split('=', 1)
+            )
             self._session_props[propname] = propval
         if 'data' in response_json:
             assert self._columns

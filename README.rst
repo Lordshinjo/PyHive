@@ -7,8 +7,8 @@ PyHive
 ======
 
 PyHive is a collection of Python `DB-API <http://www.python.org/dev/peps/pep-0249/>`_ and
-`SQLAlchemy <http://www.sqlalchemy.org/>`_ interfaces for `Presto <http://prestodb.io/>`_ and
-`Hive <http://hive.apache.org/>`_.
+`SQLAlchemy <http://www.sqlalchemy.org/>`_ interfaces for `Presto <http://prestodb.io/>`_,
+`Trino <https://trino.io/>`_ and `Hive <http://hive.apache.org/>`_.
 
 Usage
 =====
@@ -17,7 +17,7 @@ DB-API
 ------
 .. code-block:: python
 
-    from pyhive import presto  # or import hive
+    from pyhive import presto  # or import hive or trino
     cursor = presto.connect('localhost').cursor()
     cursor.execute('SELECT * FROM my_awesome_data LIMIT 10')
     print cursor.fetchone()
@@ -61,6 +61,8 @@ First install this package to register it with SQLAlchemy (see ``setup.py``).
     from sqlalchemy import *
     from sqlalchemy.engine import create_engine
     from sqlalchemy.schema import *
+    # Trino
+    engine = create_engine('trino://localhost:8080/hive/default')
     # Presto
     engine = create_engine('presto://localhost:8080/hive/default')
     # Hive
@@ -79,7 +81,13 @@ Passing session configuration
     # DB-API
     hive.connect('localhost', configuration={'hive.exec.reducers.max': '123'})
     presto.connect('localhost', session_props={'query_max_run_time': '1234m'})
+    trino.connect('localhost', session_props={'query_max_run_time': '1234m'})
     # SQLAlchemy
+    create_engine(
+        'trino://user@host:443/hive',
+        connect_args={'protocol': 'https',
+                      'session_props': {'query_max_run_time': '1234m'}}
+    )
     create_engine(
         'presto://user@host:443/hive',
         connect_args={'protocol': 'https',
@@ -101,12 +109,12 @@ Requirements
 Install using
 
 - ``pip install 'pyhive[hive]'`` for the Hive interface and
-- ``pip install 'pyhive[presto]'`` for the Presto interface.
+- ``pip install 'pyhive[presto]'`` for the Presto and Trino interfaces.
 
 PyHive works with
 
 - Python 2.7 / Python 3
-- For Presto: Presto install
+- For Presto/Trino: Presto/Trino install
 - For Hive: `HiveServer2 <https://cwiki.apache.org/confluence/display/Hive/Setting+up+HiveServer2>`_ daemon
 
 Changelog
@@ -119,7 +127,7 @@ Contributing
 - Changes must come with tests, with the exception of trivial things like fixing comments. See .travis.yml for the test environment setup.
 - Notes on project scope:
 
-  - This project is intended to be a minimal Hive/Presto client that does that one thing and nothing else.
+  - This project is intended to be a minimal Hive/Presto/Trino client that does that one thing and nothing else.
     Features that can be implemented on top of PyHive, such integration with your favorite data analysis library, are likely out of scope.
   - We prefer having a small number of generic features over a large number of specialized, inflexible features.
     For example, the Presto code takes an arbitrary ``requests_session`` argument for customizing HTTP calls, as opposed to having a separate parameter/branch for each ``requests`` option.
@@ -131,7 +139,7 @@ Testing
 .. image:: http://codecov.io/github/dropbox/PyHive/coverage.svg?branch=master
     :target: http://codecov.io/github/dropbox/PyHive?branch=master
 
-Run the following in an environment with Hive/Presto::
+Run the following in an environment with Hive/Presto/Trino::
 
     ./scripts/make_test_tables.sh
     virtualenv --no-site-packages env
